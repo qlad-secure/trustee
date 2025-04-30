@@ -58,10 +58,14 @@ kbs-types.workspace = true
 kms = { workspace = true, default-features = false }
 lazy_static = "1.4.0"
 log.workspace = true
+ml-kem = "0.2.1"
+hybrid-array = "=0.2.0-rc.9"
 mobc = { version = "0.8.5", optional = true }
 p256 = { workspace = true, features = ["ecdh"] }
 prost = { workspace = true, optional = true }
 rand = "0.8.5"
+rand_core = "0.6.4"
+rand_chacha = "0.3.1"
 regex = "1.11.1"
 regorus.workspace = true
 reqwest = { workspace = true, features = ["json"] }

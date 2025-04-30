@@ -8,13 +8,15 @@ use actix_web::http::Method;
 use anyhow::{Context, Error, Result};
 use serde::Deserialize;
 
-use super::{sample, RepositoryConfig, ResourceStorage};
+use super::implementations::resource::{RepositoryConfig, ResourceStorage};
+use super::implementations::sample::{Sample, SampleConfig};
+use super::implementations::mlkem::{MLKEMBackend, MLKEMConfig};
 
 #[cfg(feature = "nebula-ca-plugin")]
-use super::{NebulaCaPlugin, NebulaCaPluginConfig};
+use super::implementations::nebula_ca::{NebulaCaPlugin, NebulaCaPluginConfig};
 
 #[cfg(feature = "pkcs11")]
-use super::{Pkcs11Backend, Pkcs11Config};
+use super::implementations::pkcs11::{Pkcs11Backend, Pkcs11Config};
 
 type ClientPluginInstance = Arc<dyn ClientPlugin>;
 
@@ -61,7 +63,7 @@ pub trait ClientPlugin: Send + Sync {
 #[serde(tag = "name")]
 pub enum PluginsConfig {
     #[serde(alias = "sample")]
-    Sample(sample::SampleConfig),
+    Sample(SampleConfig),
 
     #[serde(alias = "resource")]
     ResourceStorage(RepositoryConfig),
@@ -73,6 +75,9 @@ pub enum PluginsConfig {
     #[cfg(feature = "pkcs11")]
     #[serde(alias = "pkcs11")]
     Pkcs11(Pkcs11Config),
+    
+    #[serde(alias = "mlkem")]
+    MLKEM(MLKEMConfig),
 }
 
 impl Display for PluginsConfig {
@@ -84,6 +89,7 @@ impl Display for PluginsConfig {
             PluginsConfig::NebulaCaPlugin(_) => f.write_str("nebula-ca"),
             #[cfg(feature = "pkcs11")]
             PluginsConfig::Pkcs11(_) => f.write_str("pkcs11"),
+            PluginsConfig::MLKEM(_) => f.write_str("mlkem"),
         }
     }
 }
@@ -95,7 +101,7 @@ impl TryInto<ClientPluginInstance> for PluginsConfig {
         let plugin = match self {
             PluginsConfig::Sample(cfg) => {
                 let sample_plugin =
-                    sample::Sample::try_from(cfg).context("Initialize 'Sample' plugin failed")?;
+                    Sample::try_from(cfg).context("Initialize 'Sample' plugin failed")?;
                 Arc::new(sample_plugin) as _
             }
             PluginsConfig::ResourceStorage(repository_config) => {
@@ -115,10 +121,31 @@ impl TryInto<ClientPluginInstance> for PluginsConfig {
                     .context("Initialize 'pkcs11' plugin failed")?;
                 Arc::new(pkcs11) as _
             }
+            PluginsConfig::MLKEM(mlkem_config) => {
+                let mlkem = MLKEMBackend::try_from(mlkem_config)
+                    .context("Initialize 'mlkem' plugin failed")?;
+                Arc::new(mlkem) as _
+            }
         };
 
         Ok(plugin)
     }
+}
+
+#[derive(Deserialize, Clone, Debug, PartialEq, Default)]
+pub struct PluginConfig {
+    #[serde(default)]
+    pub sample: Option<SampleConfig>,
+    #[serde(default)]
+    pub resource: Option<RepositoryConfig>,
+    #[cfg(feature = "pkcs11")]
+    #[serde(default)]
+    pub pkcs11: Option<Pkcs11Config>,
+    #[cfg(feature = "nebula-ca-plugin")]
+    #[serde(default)]
+    pub nebula: Option<NebulaCaPluginConfig>,
+    #[serde(default)]
+    pub mlkem: Option<MLKEMConfig>,
 }
 
 /// [`PluginManager`] manages different kinds of plugins.

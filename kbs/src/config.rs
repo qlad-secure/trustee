@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::admin::config::{AdminConfig, DEFAULT_INSECURE_API};
-use crate::plugins::PluginsConfig;
+use crate::plugins::plugin_manager::PluginsConfig;
 use crate::policy_engine::PolicyEngineConfig;
 use crate::token::AttestationTokenVerifierConfig;
 use anyhow::anyhow;
