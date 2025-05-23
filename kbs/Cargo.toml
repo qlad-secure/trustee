@@ -32,6 +32,8 @@ aliyun = ["kms/aliyun"]
 
 # Use pkcs11 plugin
 pkcs11 = ["cryptoki"]
+# Use mlkem plugin
+mlkem = []
 
 # Use Nebula Certificate Authority plugin to provide CA services to nodes
 # that want to join a Nebula overlay network
@@ -58,8 +60,8 @@ kbs-types.workspace = true
 kms = { workspace = true, default-features = false }
 lazy_static = "1.4.0"
 log.workspace = true
-ml-kem = "0.2.1"
-hybrid-array = "=0.2.0-rc.9"
+ml-kem = { version = "0.3.0-pre", features = ["deterministic"] }
+hybrid-array = "0.2.3"
 mobc = { version = "0.8.5", optional = true }
 p256 = { workspace = true, features = ["ecdh"] }
 prost = { workspace = true, optional = true }

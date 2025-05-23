@@ -338,7 +338,7 @@ dependencies = [
  "getrandom 0.2.15",
  "once_cell",
  "version_check",
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -606,7 +606,26 @@ dependencies = [
 [[package]]
 name = "attester"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=27b8245#27b824547dd75ea4e2b2fe4a1eb9722d25f81c1a"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "hex",
+ "kbs-types 0.7.0",
+ "log",
+ "serde",
+ "serde_json",
+ "serde_with 1.14.0",
+ "sha2",
+ "strum",
+ "thiserror 2.0.3",
+]
+
+[[package]]
+name = "attester"
+version = "0.1.0"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -634,25 +653,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.3",
  "tokio",
-]
-
-[[package]]
-name = "attester"
-version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "hex",
- "kbs-types 0.7.0",
- "log",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
- "sha2",
- "strum",
- "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -736,7 +736,7 @@ dependencies = [
  "sha2",
  "thiserror 2.0.3",
  "tss-esapi",
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -768,7 +768,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.3",
  "ureq",
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1389,18 +1389,14 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 [[package]]
 name = "crypto"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=27b8245#27b824547dd75ea4e2b2fe4a1eb9722d25f81c1a"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
 dependencies = [
  "aes-gcm",
- "aes-kw",
  "anyhow",
  "base64 0.22.1",
- "concat-kdf",
  "ctr",
- "kbs-types 0.10.0",
- "p256",
+ "kbs-types 0.7.0",
  "rand 0.8.5",
- "rand 0.9.0",
  "rsa",
  "serde",
  "serde_json",
@@ -1412,14 +1408,18 @@ dependencies = [
 [[package]]
 name = "crypto"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
 dependencies = [
  "aes-gcm",
+ "aes-kw",
  "anyhow",
  "base64 0.22.1",
+ "concat-kdf",
  "ctr",
- "kbs-types 0.7.0",
+ "kbs-types 0.10.0",
+ "p256",
  "rand 0.8.5",
+ "rand 0.9.1",
  "rsa",
  "serde",
  "serde_json",
@@ -2396,9 +2396,9 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hybrid-array"
-version = "0.2.0-rc.9"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d306b679262030ad8813a82d4915fc04efff97776e4db7f8eb5137039d56400"
+checksum = "f2d35805454dc9f8662a98d6d61886ffe26bd465f5960e0e55345c70d5c0d2a9"
 dependencies = [
  "typenum",
 ]
@@ -3052,18 +3052,18 @@ dependencies = [
 [[package]]
 name = "kbs_protocol"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=27b8245#27b824547dd75ea4e2b2fe4a1eb9722d25f81c1a"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
 dependencies = [
  "anyhow",
  "async-trait",
- "attester 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=27b8245)",
+ "attester 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
  "base64 0.22.1",
- "crypto 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=27b8245)",
+ "crypto 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
  "jwt-simple",
  "kbs-types 0.10.0",
  "log",
  "reqwest",
- "resource_uri 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=27b8245)",
+ "resource_uri 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
  "serde",
  "serde_json",
  "sha2",
@@ -3352,9 +3352,9 @@ dependencies = [
 
 [[package]]
 name = "ml-kem"
-version = "0.2.1"
+version = "0.3.0-pre"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97befee0c869cb56f3118f49d0f9bb68c9e3f380dec23c1100aedc4ec3ba239a"
+checksum = "44fde1200e61dd95a2c6143baa22dbab79d8dad2644f55e955dd8a3d535f5d9f"
 dependencies = [
  "hybrid-array",
  "kem",
@@ -4020,7 +4020,7 @@ version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -4194,13 +4194,12 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94"
+checksum = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97"
 dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
- "zerocopy 0.8.23",
 ]
 
 [[package]]
@@ -4433,7 +4432,7 @@ dependencies = [
 [[package]]
 name = "resource_uri"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=27b8245#27b824547dd75ea4e2b2fe4a1eb9722d25f81c1a"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
 dependencies = [
  "anyhow",
  "serde",
@@ -4444,7 +4443,7 @@ dependencies = [
 [[package]]
 name = "resource_uri"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
 dependencies = [
  "anyhow",
  "serde",
@@ -4687,7 +4686,7 @@ dependencies = [
  "s390_pv_core",
  "serde",
  "thiserror 1.0.69",
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -4701,7 +4700,7 @@ dependencies = [
  "log",
  "serde",
  "thiserror 1.0.69",
- "zerocopy 0.7.35",
+ "zerocopy",
 ]
 
 [[package]]
@@ -6474,16 +6473,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
  "byteorder",
- "zerocopy-derive 0.7.35",
-]
-
-[[package]]
-name = "zerocopy"
-version = "0.8.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd97444d05a4328b90e75e503a34bad781f14e28a823ad3557f0750df1ebcbc6"
-dependencies = [
- "zerocopy-derive 0.8.23",
+ "zerocopy-derive",
 ]
 
 [[package]]
@@ -6491,17 +6481,6 @@ name = "zerocopy-derive"
 version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.87",
-]
-
-[[package]]
-name = "zerocopy-derive"
-version = "0.8.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6352c01d0edd5db859a63e2605f4ea3183ddbd15e2c4a9e7d32184df75e4f154"
 dependencies = [
  "proc-macro2",
  "quote",

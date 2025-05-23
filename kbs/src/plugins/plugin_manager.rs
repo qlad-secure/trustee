@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashMap, fmt::Display, sync::Arc};
+use std::{any::Any, collections::HashMap, fmt::Display, sync::Arc};
 
 use actix_web::http::Method;
 use anyhow::{Context, Error, Result};
@@ -10,7 +10,9 @@ use serde::Deserialize;
 
 use super::implementations::resource::{RepositoryConfig, ResourceStorage};
 use super::implementations::sample::{Sample, SampleConfig};
-use super::implementations::mlkem::{MLKEMBackend, MLKEMConfig};
+
+// #[cfg(feature = "mlkem")]
+use super::implementations::mlkem::{MLKEMBackend, MLKEMConfig, MLKEMParams};
 
 #[cfg(feature = "nebula-ca-plugin")]
 use super::implementations::nebula_ca::{NebulaCaPlugin, NebulaCaPluginConfig};
@@ -21,7 +23,7 @@ use super::implementations::pkcs11::{Pkcs11Backend, Pkcs11Config};
 type ClientPluginInstance = Arc<dyn ClientPlugin>;
 
 #[async_trait::async_trait]
-pub trait ClientPlugin: Send + Sync {
+pub trait ClientPlugin: Send + Sync + Any {
     /// This function is the entry to a client plugin. The function
     /// marks `&self` rather than `&mut self`, because it will leave
     /// state and synchronization issues down to the concrete plugin.
@@ -75,7 +77,8 @@ pub enum PluginsConfig {
     #[cfg(feature = "pkcs11")]
     #[serde(alias = "pkcs11")]
     Pkcs11(Pkcs11Config),
-    
+
+    // #[cfg(feature = "mlkem")]
     #[serde(alias = "mlkem")]
     MLKEM(MLKEMConfig),
 }
@@ -89,6 +92,7 @@ impl Display for PluginsConfig {
             PluginsConfig::NebulaCaPlugin(_) => f.write_str("nebula-ca"),
             #[cfg(feature = "pkcs11")]
             PluginsConfig::Pkcs11(_) => f.write_str("pkcs11"),
+            // #[cfg(feature = "mlkem")]
             PluginsConfig::MLKEM(_) => f.write_str("mlkem"),
         }
     }
@@ -121,10 +125,9 @@ impl TryInto<ClientPluginInstance> for PluginsConfig {
                     .context("Initialize 'pkcs11' plugin failed")?;
                 Arc::new(pkcs11) as _
             }
-            PluginsConfig::MLKEM(mlkem_config) => {
-                let mlkem = MLKEMBackend::try_from(mlkem_config)
-                    .context("Initialize 'mlkem' plugin failed")?;
-                Arc::new(mlkem) as _
+            // #[cfg(feature = "mlkem")]
+            PluginsConfig::MLKEM(_) => {
+                anyhow::bail!("mlkem plugin should be initialized in PluginManager");
             }
         };
 
@@ -144,6 +147,7 @@ pub struct PluginConfig {
     #[cfg(feature = "nebula-ca-plugin")]
     #[serde(default)]
     pub nebula: Option<NebulaCaPluginConfig>,
+    #[cfg(feature = "mlkem")]
     #[serde(default)]
     pub mlkem: Option<MLKEMConfig>,
 }
@@ -158,14 +162,50 @@ impl TryFrom<Vec<PluginsConfig>> for PluginManager {
     type Error = Error;
 
     fn try_from(value: Vec<PluginsConfig>) -> Result<Self> {
-        let plugins = value
+        let mut plugins = value
+            .clone()
             .into_iter()
+            .filter(|cfg| cfg.to_string() != "mlkem")
             .map(|cfg| {
                 let name = cfg.to_string();
                 let plugin: ClientPluginInstance = cfg.try_into()?;
                 Ok((name, plugin))
             })
             .collect::<Result<HashMap<String, ClientPluginInstance>>>()?;
+
+        // #[cfg(feature = "mlkem")]
+        {
+            let resource_plugin = plugins.get("resource").cloned().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "mlkem plugin is enabled but its required 'resource' plugin is missing."
+                )
+            })?;
+
+            let cfg = value
+                .into_iter()
+                .find(|cfg| cfg.to_string() == "mlkem")
+                .ok_or_else(
+                    (|| {
+                        anyhow::anyhow!(
+                        "mlkem plugin is enabled but its required 'resource' plugin is missing."
+                    )
+                    }),
+                )?;
+            let name = cfg.to_string();
+            match cfg {
+                PluginsConfig::MLKEM(mlkem_config) => {
+                    let params = MLKEMParams {
+                        cfg: mlkem_config.clone(),
+                        resource_client: resource_plugin.clone(),
+                    };
+                    let mlkem = MLKEMBackend::try_from(params)
+                        .context("Initialize 'mlkem' plugin failed")?;
+
+                    plugins.insert(name.clone(), Arc::new(mlkem));
+                }
+                _ => return Err(anyhow::anyhow!("invalid mlkem config")),
+            }
+        }
         Ok(Self { plugins })
     }
 }
