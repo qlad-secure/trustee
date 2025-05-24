@@ -184,13 +184,11 @@ impl TryFrom<Vec<PluginsConfig>> for PluginManager {
             let cfg = value
                 .into_iter()
                 .find(|cfg| cfg.to_string() == "mlkem")
-                .ok_or_else(
-                    (|| {
-                        anyhow::anyhow!(
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
                         "mlkem plugin is enabled but its required 'resource' plugin is missing."
                     )
-                    }),
-                )?;
+                })?;
             let name = cfg.to_string();
             match cfg {
                 PluginsConfig::MLKEM(mlkem_config) => {

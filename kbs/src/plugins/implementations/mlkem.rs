@@ -1,9 +1,6 @@
-use super::resource::ResourceStorage;
-use crate::plugins::implementations::resource::{ResourceDesc, StorageBackend};
 use actix_web::http::Method;
 use anyhow::{bail, Context, Result};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-use hybrid_array::typenum::Unsigned;
 use hybrid_array::typenum::U32;
 use hybrid_array::Array;
 use ml_kem::kem::DecapsulationKey;
@@ -14,19 +11,13 @@ use ml_kem::KemCore;
 use ml_kem::MlKem768Params;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{RngCore, SeedableRng};
-use reqwest::Client;
 use serde::Deserialize;
-use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock; // Added for U32::USIZE
 
 use super::super::plugin_manager::ClientPlugin;
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct MLKEMConfig {
-    // Type field to match ResourceStorage config
     #[serde(default)]
     pub r#type: Option<String>,
 }
@@ -80,12 +71,12 @@ impl ClientPlugin for MLKEMBackend {
                     .resource_client
                     .handle(body, query, &resource_path, method)
                     .await?;
-                let pk = self.get_pk_from_sk(&sk).context("get pk from sk failed")?;
+                let pk = Self::get_pk_from_sk(&sk).context("get pk from sk failed")?;
 
                 Ok(pk)
             }
             "generate" => {
-                let (pk, sk) = self.generate_key(params).context("generate key failed")?;
+                let (pk, sk) = Self::generate_key().context("generate key failed")?;
                 let resource_path = format!("/{}", params);
                 self.resource_client
                     .handle(&sk, query, &resource_path, method)
@@ -104,12 +95,11 @@ impl ClientPlugin for MLKEMBackend {
         _path: &str,
         method: &Method,
     ) -> Result<bool> {
-        match *method {
-            Method::GET => Ok(true),
-            // Method::GET => Ok(false),
-            Method::POST => Ok(true),
-            _ => bail!("invalid method"),
+        if method.as_str() == "POST" {
+            return Ok(true);
         }
+
+        Ok(false)
     }
 
     async fn encrypted(
@@ -124,7 +114,7 @@ impl ClientPlugin for MLKEMBackend {
 }
 
 impl MLKEMBackend {
-    fn get_pk_from_sk(&self, sk_input: &[u8]) -> Result<Vec<u8>> {
+    fn get_pk_from_sk(sk_input: &[u8]) -> Result<Vec<u8>> {
         let sk_bytes = match base64::engine::general_purpose::STANDARD.decode(sk_input) {
             Ok(decoded) => decoded,
             Err(_e) => sk_input.to_vec(),
@@ -138,6 +128,24 @@ impl MLKEMBackend {
         let pk_bytes = ek.as_bytes().to_vec();
 
         Ok(BASE64.encode(&pk_bytes).into_bytes())
+    }
+
+    pub fn from_secret_key(
+        sk_input: &str,
+    ) -> Result<(
+        DecapsulationKey<MlKem768Params>,
+        EncapsulationKey<MlKem768Params>,
+    )> {
+        let sk_bytes = match BASE64.decode(sk_input) {
+            Ok(decoded) => decoded,
+            Err(_) => sk_input.as_bytes().to_vec(),
+        };
+
+        let mut seed = vec![0u8; 64];
+        let bytes_to_copy = std::cmp::min(sk_bytes.len(), 64);
+        seed[..bytes_to_copy].copy_from_slice(&sk_bytes[..bytes_to_copy]);
+
+        Self::init_from_seed(&seed)
     }
 
     fn init_from_seed(
@@ -162,51 +170,49 @@ impl MLKEMBackend {
         Ok((dk, ek))
     }
 
-    fn generate_key(&self, key_id: &str) -> Result<(Vec<u8>, Vec<u8>)> {
-        println!("[DEBUG] Generating MLKEM key: {}", key_id);
-
+    fn generate_key() -> Result<(Vec<u8>, Vec<u8>)> {
         let mut rng = ChaCha8Rng::from_rng(rand::thread_rng())?;
-        let (_dk, ek) = MlKem::<MlKem768Params>::generate(&mut rng);
 
-        let seed = Self::get_seed_from_dk(&_dk)?;
+        let mut d: Array<u8, U32> = Array::default();
+        rng.fill_bytes(&mut d);
+        let mut z: Array<u8, U32> = Array::default();
+        rng.fill_bytes(&mut z);
+
+        let mut seed_bytes = [0u8; 64];
+        seed_bytes[..32].copy_from_slice(d.as_slice());
+        seed_bytes[32..].copy_from_slice(z.as_slice());
+
+        let (_dk, ek) = MlKem::<MlKem768Params>::generate_deterministic(&d, &z);
+
         let pk_bytes = ek.as_bytes().to_vec();
 
         Ok((
             BASE64.encode(&pk_bytes).into_bytes(),
-            BASE64.encode(&seed).into_bytes(),
+            BASE64.encode(&seed_bytes).into_bytes(),
         ))
     }
+}
 
-    fn get_seed_from_dk(dk: &DecapsulationKey<MlKem768Params>) -> Result<Vec<u8>> {
-        let dk_bytes_array = dk.as_bytes();
-        let dk_bytes_slice: &[u8] = dk_bytes_array.as_slice();
+#[cfg(test)]
+mod tests {
+    use base64::Engine;
 
-        const EK_SIZE: usize =
-            <EncapsulationKey<MlKem768Params> as EncodedSizeUser>::EncodedSize::USIZE;
-        const H_SIZE: usize = <MlKem<MlKem768Params> as KemCore>::SharedKeySize::USIZE;
-        const D_SIZE: usize = U32::USIZE;
-        const Z_SIZE: usize = U32::USIZE;
+    use crate::plugins::implementations::mlkem::MLKEMBackend;
+    use base64::engine::general_purpose::STANDARD as BASE64;
+    use ml_kem::EncodedSizeUser;
 
-        let d_offset = EK_SIZE + H_SIZE;
-        let z_offset = d_offset + D_SIZE;
+    #[test]
+    fn test_mlkem_key_compatibility() {
+        let (pk, seed) = MLKEMBackend::generate_key().expect("failed to generate key");
 
-        let required_len_for_extraction = z_offset + Z_SIZE;
-        if dk_bytes_slice.len() < required_len_for_extraction {
-            bail!(
-                "DecapsulationKey byte slice is too short for the extraction. Expected at least {} bytes to access up to offset {}, got {}.",
-                required_len_for_extraction,
-                required_len_for_extraction -1,
-                dk_bytes_slice.len()
-            );
-        }
+        let pk_64 = String::from_utf8(pk).expect("invalid pk value");
+        let seed_str = String::from_utf8(seed).expect("invalid seed value");
 
-        let d_part = &dk_bytes_slice[d_offset..(d_offset + D_SIZE)];
-        let z_part = &dk_bytes_slice[z_offset..(z_offset + Z_SIZE)];
+        let (_, ek) = MLKEMBackend::from_secret_key(seed_str.as_str())
+            .expect("failed to initialize from seed");
 
-        let mut seed = Vec::with_capacity(D_SIZE + Z_SIZE);
-        seed.extend_from_slice(d_part);
-        seed.extend_from_slice(z_part);
+        let pk_from_seed = BASE64.encode(ek.as_bytes().to_vec());
 
-        Ok(seed)
+        assert_eq!(pk_64, pk_from_seed);
     }
 }
