@@ -76,6 +76,37 @@ pub async fn get_resource_with_token(
     Ok(resource_bytes)
 }
 
+/// Unwrap MLKEM key with attestation results token
+/// Input parameters:
+/// - url: KBS server root URL.
+/// - path: Resource path, format must be `<top>/<middle>/<tail>`, e.g. `alice/key/example`.
+/// - tee_key_pem: TEE private key file path (PEM format). This key must consistent with the public key in `token` claims.
+/// - token: Attestation Results Token file path.
+/// - kbs_root_certs_pem: Custom HTTPS root certificate of KBS server. It can be left blank.
+pub async fn unwrap_mlkem_with_token(
+    url: &str,
+    path: &str,
+    tee_key_pem: String,
+    token: String,
+    kbs_root_certs_pem: Vec<String>,
+) -> Result<Vec<u8>> {
+    let token_provider = Box::<TestTokenProvider>::default();
+    let mut client_builder =
+        KbsClientBuilder::with_token_provider(token_provider, url).set_token(&token);
+    client_builder = client_builder.set_tee_key(&tee_key_pem);
+
+    for cert in kbs_root_certs_pem {
+        client_builder = client_builder.add_kbs_cert(&cert)
+    }
+    let mut client = client_builder.build()?;
+
+    let resource_kbs_uri = format!("kbs:///{path}");
+    let resource_bytes = client
+        .get_resource(serde_json::from_str(&format!("\"{resource_kbs_uri}\""))?)
+        .await?;
+    Ok(resource_bytes)
+}
+
 /// Get secret resources with attestation
 /// Input parameters:
 /// - url: KBS server root URL.
