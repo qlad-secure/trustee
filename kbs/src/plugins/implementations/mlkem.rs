@@ -1,17 +1,20 @@
 use actix_web::http::Method;
+use anyhow::anyhow;
 use anyhow::{bail, Context, Result};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+// use crypto::mlkem::mlkem_decrypt;
 use hybrid_array::typenum::U32;
 use hybrid_array::Array;
-use ml_kem::kem::DecapsulationKey;
 use ml_kem::kem::EncapsulationKey;
 use ml_kem::kem::Kem as MlKem;
+use ml_kem::kem::{Decapsulate, DecapsulationKey};
 use ml_kem::EncodedSizeUser;
 use ml_kem::KemCore;
 use ml_kem::MlKem768Params;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{RngCore, SeedableRng};
 use serde::Deserialize;
+use std::str;
 use std::sync::Arc;
 
 use super::super::plugin_manager::ClientPlugin;
@@ -84,6 +87,32 @@ impl ClientPlugin for MLKEMBackend {
 
                 Ok(pk)
             }
+            "decapsulate" => {
+                let resource_path = format!("/{}", params);
+                let sk = self
+                    .resource_client
+                    .handle(body, query, &resource_path, &Method::GET)
+                    .await?;
+
+                // Parse query string to get encapsulated_ss
+                let params = serde_qs::from_str::<std::collections::HashMap<String, String>>(query)
+                    .context("Failed to parse query string")?;
+                let encapsulated_ss = params
+                    .get("encapsulated_ss")
+                    .context("Missing 'encapsulated_ss' in query")?;
+
+                log::debug!("Decapsulating with encapsulated_ss: {}", encapsulated_ss);
+
+                // Decode base64
+                let encapsulated_ss_bytes = base64::engine::general_purpose::URL_SAFE
+                    .decode(encapsulated_ss)
+                    .context("Failed to decode encapsulated_ss")?;
+
+                let unwrapped = Self::mlkem_decrypt(&sk, encapsulated_ss_bytes)
+                    .context("generate key failed")?;
+
+                Ok(unwrapped)
+            }
             _ => bail!("invalid path: {}", action),
         }
     }
@@ -115,7 +144,7 @@ impl ClientPlugin for MLKEMBackend {
 
 impl MLKEMBackend {
     fn get_pk_from_sk(sk_input: &[u8]) -> Result<Vec<u8>> {
-        let sk_bytes = match base64::engine::general_purpose::STANDARD.decode(sk_input) {
+        let sk_bytes = match BASE64.decode(sk_input) {
             Ok(decoded) => decoded,
             Err(_e) => sk_input.to_vec(),
         };
@@ -190,6 +219,17 @@ impl MLKEMBackend {
             BASE64.encode(&pk_bytes).into_bytes(),
             BASE64.encode(&seed_bytes).into_bytes(),
         ))
+    }
+
+    /// Decrypt data using a shared secret derived from the decapsulation key.
+    pub fn mlkem_decrypt(sk_input: &[u8], encapsulated_ss: Vec<u8>) -> Result<Vec<u8>> {
+        let (dk, _ek) = Self::from_secret_key(str::from_utf8(sk_input)?)?;
+        let ct_array: [u8; 1088] = encapsulated_ss
+            .as_slice()
+            .try_into()
+            .map_err(|_| anyhow!("Invalid CT length"))?;
+        let shared_secret = Decapsulate::decapsulate(&dk, &Array::from(ct_array))?;
+        Ok(shared_secret.to_vec())
     }
 }
 

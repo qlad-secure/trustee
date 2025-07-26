@@ -606,26 +606,7 @@ dependencies = [
 [[package]]
 name = "attester"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "hex",
- "kbs-types 0.7.0",
- "log",
- "serde",
- "serde_json",
- "serde_with 1.14.0",
- "sha2",
- "strum",
- "thiserror 2.0.3",
-]
-
-[[package]]
-name = "attester"
-version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
+source = "git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72#5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -653,6 +634,25 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.3",
  "tokio",
+]
+
+[[package]]
+name = "attester"
+version = "0.1.0"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "hex",
+ "kbs-types 0.7.0",
+ "log",
+ "serde",
+ "serde_json",
+ "serde_with 1.14.0",
+ "sha2",
+ "strum",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -1389,14 +1389,19 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 [[package]]
 name = "crypto"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+source = "git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72#5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72"
 dependencies = [
  "aes-gcm",
+ "aes-kw",
  "anyhow",
  "base64 0.22.1",
+ "concat-kdf",
  "ctr",
- "kbs-types 0.7.0",
+ "kbs-types 0.10.0",
+ "log",
+ "p256",
  "rand 0.8.5",
+ "rand 0.9.1",
  "rsa",
  "serde",
  "serde_json",
@@ -1408,18 +1413,14 @@ dependencies = [
 [[package]]
 name = "crypto"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
 dependencies = [
  "aes-gcm",
- "aes-kw",
  "anyhow",
  "base64 0.22.1",
- "concat-kdf",
  "ctr",
- "kbs-types 0.10.0",
- "p256",
+ "kbs-types 0.7.0",
  "rand 0.8.5",
- "rand 0.9.1",
  "rsa",
  "serde",
  "serde_json",
@@ -3052,18 +3053,18 @@ dependencies = [
 [[package]]
 name = "kbs_protocol"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
+source = "git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72#5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72"
 dependencies = [
  "anyhow",
  "async-trait",
- "attester 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
+ "attester 0.1.0 (git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72)",
  "base64 0.22.1",
- "crypto 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
+ "crypto 0.1.0 (git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72)",
  "jwt-simple",
  "kbs-types 0.10.0",
  "log",
  "reqwest",
- "resource_uri 0.1.0 (git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0)",
+ "resource_uri 0.1.0 (git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72)",
  "serde",
  "serde_json",
  "sha2",
@@ -4432,7 +4433,7 @@ dependencies = [
 [[package]]
 name = "resource_uri"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
+source = "git+ssh://git@github.com/Poluect/guest-components.git?rev=5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72#5bd8c162cf3d3aa6d5c576c1e59b132bd7690a72"
 dependencies = [
  "anyhow",
  "serde",
@@ -4443,7 +4444,7 @@ dependencies = [
 [[package]]
 name = "resource_uri"
 version = "0.1.0"
-source = "git+https://github.com/confidential-containers/guest-components.git?rev=v0.12.0#1191f8257eb65f42892ab0328cec02e58d40de84"
+source = "git+https://github.com/confidential-containers/guest-components.git?rev=e6999a3c0fd877dae9e68ea78b8b483062db32b8#e6999a3c0fd877dae9e68ea78b8b483062db32b8"
 dependencies = [
  "anyhow",
  "serde",
