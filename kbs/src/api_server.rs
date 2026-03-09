@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix_web::{
+    body::MessageBody,
+    dev::{Extensions, ServiceRequest, ServiceResponse},
     http::{header::Header, Method},
     middleware, web, App, HttpRequest, HttpResponse, HttpServer,
 };
 use actix_web_httpauth::headers::authorization::{Authorization, Bearer};
 use anyhow::Context;
-use log::info;
+use log::{debug, info};
+use std::any::Any;
 
 use crate::{
     admin::Admin,
@@ -25,6 +28,49 @@ use crate::{
 };
 
 const KBS_PREFIX: &str = "/kbs/v0";
+
+#[derive(Clone, Debug)]
+pub struct TlsInfo {
+    pub kx_group: String,
+    pub cipher_suite: String,
+}
+
+async fn tls_debug_middleware(
+    req: ServiceRequest,
+    next: middleware::Next<impl actix_web::body::MessageBody>,
+) -> std::result::Result<ServiceResponse<impl actix_web::body::MessageBody>, actix_web::Error> {
+    if let Some(tls) = req.conn_data::<TlsInfo>() {
+        debug!(
+            "TLS connection from {:?}: kx_group={} cipher_suite={}",
+            req.peer_addr(),
+            tls.kx_group,
+            tls.cipher_suite,
+        );
+    }
+    next.call(req).await
+}
+
+fn on_tls_connect(io: &dyn Any, ext: &mut Extensions) {
+    use actix_tls::accept::rustls_0_23::TlsStream as ActixTlsStream;
+    use tokio::net::TcpStream;
+
+    if let Some(tls) = io.downcast_ref::<ActixTlsStream<TcpStream>>() {
+        let (_, conn) = tls.get_ref();
+        let kx_group = conn
+            .negotiated_key_exchange_group()
+            .map(|g| format!("{:?}", g.name()))
+            .unwrap_or_else(|| "unknown".to_string());
+        let cipher_suite = conn
+            .negotiated_cipher_suite()
+            .map(|s| format!("{:?}", s.suite()))
+            .unwrap_or_else(|| "unknown".to_string());
+        info!(
+            "TLS handshake completed: kx_group={} cipher_suite={}",
+            kx_group, cipher_suite
+        );
+        ext.insert(TlsInfo { kx_group, cipher_suite });
+    }
+}
 
 macro_rules! kbs_path {
     ($path:expr) => {
@@ -119,6 +165,7 @@ impl ApiServer {
                 let api_server = self.clone();
                 App::new()
                     .wrap(middleware::Logger::default())
+                    .wrap(middleware::from_fn(tls_debug_middleware))
                     .wrap(middleware::from_fn(prometheus_metrics_middleware))
                     .app_data(web::Data::new(api_server))
                     .app_data(web::PayloadConfig::new(
@@ -143,7 +190,8 @@ impl ApiServer {
 
         if !http_config.insecure_http {
             let tls_server = http_server
-                .bind_openssl(
+                .on_connect(on_tls_connect)
+                .bind_rustls_0_23(
                     &http_config.sockets[..],
                     crate::http::tls_config(&http_config)
                         .map_err(|e| Error::HTTPSFailed { source: e })?,
@@ -337,13 +385,9 @@ pub(crate) async fn prometheus_metrics_handler(
     Ok(HttpResponse::Ok().body(report))
 }
 
-use actix_web::body::MessageBody;
-use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::middleware::Next;
-
 async fn prometheus_metrics_middleware(
     req: ServiceRequest,
-    next: Next<impl MessageBody>,
+    next: middleware::Next<impl MessageBody>,
 ) -> std::result::Result<ServiceResponse<impl MessageBody>, actix_web::Error> {
     let start = actix::clock::Instant::now();
 

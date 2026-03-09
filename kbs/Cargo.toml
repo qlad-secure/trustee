@@ -42,7 +42,7 @@ vault = ["vaultrs"]
 
 [dependencies]
 actix = "0.13.5"
-actix-web = { workspace = true, features = ["openssl"] }
+actix-web = { workspace = true, features = ["rustls-0_23"] }
 actix-web-httpauth.workspace = true
 aes-gcm = "0.10.1"
 aes-kw = "0.2.1"
@@ -88,6 +88,9 @@ tonic = { workspace = true, optional = true }
 tonic-prost = { workspace = true, optional = true }
 uuid = { version = "1.18.0", features = ["serde", "v4"] }
 openssl.workspace = true
+rustls.workspace = true
+rustls-pemfile.workspace = true
+actix-tls = { version = "3", features = ["rustls-0_23"] }
 az-cvm-vtpm = { version = "0.7.4", default-features = false, optional = true }
 vaultrs = { version = "0.7.4", optional = true }
 

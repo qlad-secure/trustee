@@ -27,6 +27,7 @@ RUN if [ "${ARCH}" = "x86_64" ]; then curl -fsSL https://download.01.org/intel-s
     libprotobuf-dev \
     libssl-dev \
     make \
+    nasm \
     perl \
     pkg-config \
     protobuf-compiler \
